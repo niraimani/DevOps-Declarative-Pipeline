@@ -1,0 +1,26 @@
+node {
+	stage('checkout') {
+        git 'https://github.com/RAMKIDEVOPS/CI-with-Jenkins-in-AWS-Demo.git'
+	}
+   	stage('compile') {
+    	withMaven(maven:'MyMaven') {
+	        sh 'mvn compile'
+	        sh 'mvn clean install'
+        }
+   }
+   	stage('Sonarqube analysis') {
+       	withSonarQubeEnv(credentialsId: 'sonarqube') {
+     	   sh 'mvn sonar:sonar -Dsonar.host.url=http://35.238.144.183:9000'
+		}
+   	}
+   	stage('Deploy tomcat') {
+        sshagent(['tomcat-dev']) {
+            sh 'scp -o StrictHostKeyChecking=no $WORKSPACE/project/target/*.war root@35.188.92.142:/opt/tomcat/webapps'
+        }
+   	}
+    stage('Email Notification') {
+      mail bcc: '', body: '''Hi Welcome to jenkins email alerts
+      Thanks
+      Niraimani''', cc: '', from: '', replyTo: '', subject: 'Jenkins Job', to: 'niraimani@gmail.com'
+    }
+}
